@@ -1,0 +1,42 @@
+input:
+  label: ""
+  kafka_franz:
+    seed_brokers:
+      - ${RP_BOOTSTRAP_SERVER}
+    topics:
+      - legal_cases
+    regexp_topics: false
+    consumer_group: "legal-pipe"
+pipeline:
+  processors:
+    - mapping: |
+        meta doc = this
+        meta summary = this.summary.string()
+        meta key = meta("kafka_key").string()
+    - branch:
+        processors:
+          - ollama_embeddings:
+              server_address: http://127.0.0.1:11434
+              model: nomic-embed-text
+          - log:
+              message: ${! this }
+        result_map: |-
+          root = json()
+    - catch:
+      - log:
+          message: "Processing failed due to: ${!error()}"
+output:
+  label: ""
+  qdrant:
+    max_in_flight: 64
+    batching:
+      count: 0
+      byte_size: 0
+      period: ""
+      check: ""
+    grpc_host: localhost:6334
+    collection_name: "court-cases"
+    id: uuid_v4()
+    vector_mapping: root = this
+    payload_mapping: metadata()
+

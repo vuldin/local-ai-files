@@ -1,0 +1,32 @@
+input:
+  file:
+    paths: [ ./court_cases/*.txt ]
+    scanner:
+      to_the_end: {}
+pipeline:
+  processors:
+    - log:
+        message: ${! meta() }
+    - mapping: |
+              meta id = meta("path").string().trim_prefix("court_cases/")
+              meta text = content().string()
+    - ollama_chat:
+        model: llama3.2
+        system_prompt: |
+          Summarize the following court case in 3 sentences. Only output the summary:
+        response_format: text
+        server_address: http://127.0.0.1:11434
+    - mapping: |
+        root.id = meta("id")
+        root.text = meta("text")
+        root.summary = content().string()
+    - log:
+        message: \${! json() }
+output:
+  kafka_franz:
+    seed_brokers:
+      -  ${RP_BOOTSTRAP_SERVER}
+    topic: legal_cases
+    compression: none
+    key: ${! json("id") }
+

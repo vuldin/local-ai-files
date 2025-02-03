@@ -31,7 +31,7 @@ services:
       # Tells Seastar (the framework Redpanda uses under the hood) to use 1 core on the system.
       - --smp 1
       - --default-log-level=info
-    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.4
     container_name: redpanda-0
     volumes:
       - redpanda-0:/var/lib/redpanda/data
@@ -57,7 +57,7 @@ services:
       - --smp 1
       - --default-log-level=info
       - --seeds redpanda-0:33145
-    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.4
     container_name: redpanda-1
     volumes:
       - redpanda-1:/var/lib/redpanda/data
@@ -85,7 +85,7 @@ services:
       - --smp 1
       - --default-log-level=info
       - --seeds redpanda-0:33145
-    image: docker.redpanda.com/redpandadata/redpanda:v24.2.4
+    image: docker.redpanda.com/redpandadata/redpanda:v24.3.4
     container_name: redpanda-2
     volumes:
       - redpanda-2:/var/lib/redpanda/data
@@ -100,7 +100,7 @@ services:
       - redpanda-0
   console:
     container_name: redpanda-console
-    image: docker.redpanda.com/redpandadata/console:v2.7.2
+    image: docker.redpanda.com/redpandadata/console:v2.8.2
     networks:
       - redpanda_network
     entrypoint: /bin/sh
@@ -134,4 +134,29 @@ services:
       - qdrant_data:/qdrant/storage
     networks:
       - redpanda_network
+  ollama:
+    image: ollama/ollama:0.5.7
+    container_name: ollama
+    restart: always
+    environment:
+      - OLLAMA_DEBUG=1
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=ollama
+    networks:
+      - redpanda_network
+    ports:
+      - 11434:11434
+  local-rag-ui:
+    image: vuldin/local-rag-ui
+    container_name: local-rag-ui
+    restart: always
+    environment:
+      OLLAMA_HOST: ollama
+    networks:
+      - redpanda_network
+    ports:
+      - 8501:8501
+    depends_on:
+      - ollama
+      - qdrant
 
