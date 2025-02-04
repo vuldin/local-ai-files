@@ -1,23 +1,13 @@
 import os
 import sys
 from langchain.chains import RetrievalQA
-#from langchain_community.vectorstores import Qdrant
-#from langchain_community.embeddings import HuggingFaceEmbeddings
-#from langchain_community.llms import Ollama
 from langchain_ollama import OllamaLLM
 from langchain_ollama.embeddings import OllamaEmbeddings
-#from langchain_qdrant import Qdrant
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-#from qdrant_client.http import models
-
-#from langchain import hub
-#from langchain_core.output_parsers import StrOutputParser
-#from langchain_core.runnables import RunnablePassthrough
-#prompt = hub.pull("rlm/rag-prompt")
 
 # Define constants
-QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")  # Default: Local Qdrant instance
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
 COLLECTION_NAME = "court-cases"
 
@@ -40,9 +30,7 @@ except Exception as e:
 llm = OllamaLLM(model="llama3.2")
 
 # Initialize HuggingFace Embeddings for Vector Storage
-#embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 embedding_model = OllamaEmbeddings(model="nomic-embed-text")
-
 
 # Initialize Qdrant Vector Store
 vector_store = QdrantVectorStore(
@@ -54,7 +42,7 @@ vector_store = QdrantVectorStore(
 # Display index statistics
 try:
     collection_info = client.get_collection(COLLECTION_NAME)
-    print(f"Collection Info: {collection_info}")
+    #print(f"Collection Info: {collection_info}")
 except Exception as e:
     print(f"Error fetching collection info: {e}")
     sys.exit(1)
@@ -79,42 +67,26 @@ def process_query(query):
     """
     try:
         # Retrieve documents
-        #retrieved_docs = retriever.get_relevant_documents(query)
         retrieved_docs = retriever.invoke(query)
 
         if not retrieved_docs:
             print("\nNo relevant documents found.")
             return
 
-        print(f"\nRetrieved {len(retrieved_docs)} documents. Displaying top document:\n")
-        print(retrieved_docs[0])
+        #print(f"\nRetrieved {len(retrieved_docs)} documents. Displaying top document:\n")
         #print(retrieved_docs[0].page_content[:500])  # Show first 500 characters
 
         def format_docs(docs):
             return "\n\n".join(doc for doc in docs)
 
         # Query LLM
-        #print(query)
         response = qa.invoke(query)
-
-#        qa_chain = (
-#            {
-#                "context": vector_store.as_retriever() | format_docs,
-#                "question": RunnablePassthrough(),
-#            }
-#            | prompt
-#            | llm
-#            | StrOutputParser()
-#        )
-#
-#        qa_chain.invoke(query)
 
         # Ensure response structure is valid
         if isinstance(response, dict) and "result" in response:
             print(f"\nResponse: {response['result']}")
         else:
             print("\nUnexpected response format:", response)
-#        print(qa_chain)
     except Exception as e:
         print(f"\nError processing query: {e}")
 
